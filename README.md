@@ -4,8 +4,8 @@
 Sistema para gerenciamento de um salão de cabeleireiro, desenvolvido como projeto para a disciplina de Banco de Dados I. Implementando operações CRUD com interface gráfica e integração com banco de dados.
 
 # Participantes 
-Lucas Nóbrega Albuquerque
-João Victor Rodrigues de Almeida Alves
+- Lucas Nóbrega Albuquerque
+- João Victor Rodrigues de Almeida Alves
 
 # Funcionalidades
 
