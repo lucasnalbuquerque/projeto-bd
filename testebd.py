@@ -97,7 +97,7 @@ while(continua):
 			serv_preco = float(input("Preço: "))
 			serv = Servico(serv_id, serv_nome, serv_preco)
 			
-			inserir = "INSERT INTO Servico VALUES (?, ?,() ?)"
+			inserir = "INSERT INTO Servico VALUES (?, ?, ?)"
 			Gerencia.executa(conexao, inserir, (serv.id, serv.nome, serv.preco))
 		
 		case 4:
