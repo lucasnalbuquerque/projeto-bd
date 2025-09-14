@@ -99,15 +99,17 @@ class Gerencia:
 	#Exibir todas tabelas
 	def listar_todos(conexao, tabela):
 		cursor = conexao.cursor()
-		comando = f"SELECT * FROM {tabela}"
-		try:
-			cursor.execute(comando)
-			resultado = cursor.fetchall()
-		except sqlite3.Error as err:
-			print(f"Erro: {err}")
+		
+		for tab in tabela:
+			comando = f"SELECT * FROM {tab}"
+			try:
+				cursor.execute(comando)
+				resultado = cursor.fetchall()
+			except sqlite3.Error as err:
+				print(f"Erro: {err}")
 			
-		for linha in resultado:
-			print(linha)
+			for linha in resultado:
+				print(linha)
 		
 	#Exibir uma tabela 
 	def exibir_um(conexao, tabela):
@@ -203,8 +205,7 @@ def menu(conexao):
 					
 					if(y=='tudo'):
 						tabelas = ['Cliente', 'Cabeleireiro', 'Servico', 'Agendamento']
-						for i in tabelas:
-							Gerencia.listar_todos(conexao, i)
+						Gerencia.listar_todos(conexao, tabelas)
 
 			
 					else:
