@@ -1,4 +1,4 @@
-import sqlite3
+import mysql.connector
 
 #Entidade cliente
 class Cliente:
@@ -39,28 +39,28 @@ class Gerencia:
 		
 		#Inserir na Tabela Cliente
 		if tabela == 1:
-			comando = "INSERT INTO Cliente VALUES (?, ?, ?, ?)"
+			comando = "INSERT INTO Cliente (nome, idade, telefone, email) VALUES (%s, %s, %s, %s)"
 			values = (objeto.nome, objeto.idade, objeto.telefone, objeto.email)
 		
 		#Inserir na Tabela Cabeleireiro
 		elif tabela == 2:
-			comando = "INSERT INTO Cabeleireiro VALUES (?, ?, ?, ?, ?)"
+			comando = "INSERT INTO Cabeleireiro (nome, idade, telefone, email, especializacao) VALUES (%s, %s, %s, %s, %s)"
 			values = (objeto.nome, objeto.idade, objeto.telefone, objeto.email, objeto.especializacao)
 		
 		#Inserir na Tabela Serviço
 		elif tabela == 3:
-			comando = "INSERT INTO Servico VALUES (?, ?, ?)"
+			comando = "INSERT INTO Servico (id_serv, nome_serv, preco) VALUES (%s, %s, %s)"
 			values = (objeto.id_serv, objeto.nome_serv, objeto.preco)
 		
 		#Inserir na Tabela Agendamento
 		elif tabela == 4:
-			comando = "INSERT INTO Agendamento VALUES (?, ?, ?, ?)"
+			comando = "INSERT INTO Agendamento (cliente, servico, data, hora) VALUES (%s, %s, %s, %s)"
 			values = (objeto.cliente, objeto.servico, objeto.data, objeto.hora)
 		
 		try:
 			cursor.execute(comando, values)
 			conexao.commit()
-		except sqlite3.Error as err:
+		except mysql.connector.Error as err:
 			print(f"Erro: {err}")
 	
 	#Alterar tupla em uma tabela
@@ -70,7 +70,7 @@ class Gerencia:
 		try:
 			cursor.execute(comando)
 			conexao.commit()
-		except sqlite3.Error as err:
+		except mysql.connector.Error as err:
 			print(f"Erro: {err}")
 		
 	#Remover tupla de alguma tabela pela condicao
@@ -80,7 +80,7 @@ class Gerencia:
 		try:
 			cursor.execute(comando)
 			conexao.commit()
-		except sqlite3.Error as err:
+		except mysql.connector.Error as err:
 			print(f"Erro: {err}")
 
 	#Recuperar uma tupla de alguma tabela por um nome(condicao)
@@ -90,7 +90,7 @@ class Gerencia:
 		try:
 			cursor.execute(comando)
 			resultado = cursor.fetchall()
-		except sqlite3.Error as err:
+		except mysql.connector.Error as err:
 			print(f"Erro: {err}")
 		
 		for linha in resultado:
@@ -105,7 +105,7 @@ class Gerencia:
 			try:
 				cursor.execute(comando)
 				resultado = cursor.fetchall()
-			except sqlite3.Error as err:
+			except mysql.connector.Error as err:
 				print(f"Erro: {err}")
 			
 			for linha in resultado:
@@ -118,7 +118,7 @@ class Gerencia:
 		try:
 			cursor.execute(comando)
 			resultado = cursor.fetchall()
-		except sqlite3.Error as err:
+		except mysql.connector.Error as err:
 			print(f"Erro: {err}")
 			
 		for linha in resultado:
@@ -218,5 +218,12 @@ def menu(conexao):
 
 
 
-conexao = sqlite3.connect("projp1.db")
+# Conectando ao MySQL
+conexao = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="bd02069900782932",
+    database="projeto_crud"
+)
+
 menu(conexao)
