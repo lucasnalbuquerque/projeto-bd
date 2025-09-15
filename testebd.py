@@ -19,8 +19,7 @@ class Cabeleireiro:
 
 #Entidade serviço
 class Servico:
-	def __init__(self, id_serv, nome_serv, preco):
-		self.id_serv = id_serv
+	def __init__(self, nome_serv, preco):
 		self.nome_serv = nome_serv
 		self.preco = preco
 
@@ -49,8 +48,8 @@ class Gerencia:
 		
 		#Inserir na Tabela Serviço
 		elif tabela == 3:
-			comando = "INSERT INTO Servico (id_serv, nome_serv, preco) VALUES (%s, %s, %s)"
-			values = (objeto.id_serv, objeto.nome_serv, objeto.preco)
+			comando = "INSERT INTO Servico (nome_serv, preco) VALUES (%s, %s)"
+			values = (objeto.nome_serv, objeto.preco)
 		
 		#Inserir na Tabela Agendamento
 		elif tabela == 4:
@@ -190,11 +189,10 @@ def menu(conexao):
 			
 		
 		elif(opcao == 3):
-			serv_id = int(input("Digite o ID do Serviço: "))
 			serv_nome = input("Digite o Nome do serviço: ")
 			serv_preco = float(input("Preço: "))
 			
-			serv = Servico(serv_id, serv_nome, serv_preco)
+			serv = Servico(serv_nome, serv_preco)
 			Gerencia.inserir(conexao, opcao, serv)
 			
 		
