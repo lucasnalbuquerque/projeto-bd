@@ -197,12 +197,12 @@ def menu(conexao):
 			
 		
 		elif(opcao == 4):
-			ag_cliente = input("Digite o email do cliente a ser agendado: ")
+			ag_cliente_id = int(input("Digite o ID do cliente a ser agendado: "))
 			ag_serv = int(input("Digite o ID do Serviço: "))
-			ag_data = input("Data: ")
-			ag_horario = input("Horario: ")
+			ag_data = input("Data (YYYY-MM-DD): ")
+			ag_horario = input("Horario (HH:MM): ")
 			
-			agenda = Agendamento(ag_cliente, ag_serv, ag_data, ag_horario)
+			agenda = Agendamento(ag_cliente_id, ag_serv, ag_data, ag_horario)
 			Gerencia.inserir(conexao, opcao, agenda)
 			
 		
