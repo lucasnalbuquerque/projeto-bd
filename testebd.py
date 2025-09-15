@@ -53,7 +53,7 @@ class Gerencia:
 		
 		#Inserir na Tabela Agendamento
 		elif tabela == 4:
-			comando = "INSERT INTO Agendamento (cliente, servico, data, hora) VALUES (%s, %s, %s, %s)"
+			comando = "INSERT INTO Agendamento (cliente_id, servico, data, hora) VALUES (%s, %s, %s, %s)"
 			values = (objeto.cliente, objeto.servico, objeto.data, objeto.hora)
 		
 		try:
