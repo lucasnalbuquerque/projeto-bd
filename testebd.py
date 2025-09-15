@@ -259,7 +259,7 @@ conexao = mysql.connector.connect(
     host="localhost",
     user="root",
     password="bd02069900782932",
-    database="projeto_crud"
+    database="projeto_bd"
 )
 
 menu(conexao)
