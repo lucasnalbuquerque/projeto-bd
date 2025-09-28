@@ -7,6 +7,9 @@ class Cliente:
 		self.idade = idade
 		self.telefone = telefone
 		self.email = email
+		self.is_flamengo = is_flamengo
+		self.is_one_piece = is_one_piece
+		self.cidade = cidade
 
 #Entidade cabeleireiro
 class Cabeleireiro:
@@ -50,7 +53,7 @@ class Gerencia:
 		#Inserir na Tabela Cliente
 		if tabela == 1:
 			comando = "INSERT INTO Cliente (nome, idade, telefone, email) VALUES (%s, %s, %s, %s)"
-			values = (objeto.nome, objeto.idade, objeto.telefone, objeto.email)
+			values = (objeto.nome, objeto.idade, objeto.telefone, objeto.email, objeto.is_flamengo, objeto.is_one_piece, objeto.cidade)
 		
 		#Inserir na Tabela Cabeleireiro
 		elif tabela == 2:
@@ -180,10 +183,36 @@ class Gerencia:
 			print(f"Erro: {err}")
 
 			print("\n--- Relatório de Vendas de Serviços ---")
+			try:
+				cursor.execute("""
+				   SELECT v.id, c.nome AS cliente, cb.nome AS cabeleireiro, s.nome_serv AS servico, v.data, v.forma_pagamento, v.status_pagamento
+				   FROM VendaServico v
+				   JOIN Cliente c ON v.cliente_id = c.id
+				   JOIN Cabeleireiro cb ON v.cabeleireiro_id = cb.id
+				   JOIN Servico s ON v.servico_id = s.id_serv
+				   ORDER BY v.data DESC
+				   """)
+				vendas = cursor.fetchall()
+				total_arrecadado = sum([venda[7] for venda in vendas])
+				print(f"Total de vendas de serviços realizadas: {len(vendas)}")
+				print("ID | Cliente | Cabeleireiro | Serviço | Data | Pagamento | Status")
+				print("-"*70)
+				for venda in vendas:
+					print(f"{venda[0]} | {venda[1]} | {venda[2]} | {venda[3]} | {venda[4]} | {venda[5]} | {venda[6]} | R$ {venda[7]:.2f}")
+			except mysql.connector.Error as err:
+				print(f"Erro: {err}")
+
+		print("\n--- Vendas por cabeleireiro (mês atual) ---")
 		try:
-			cursor.execute("SELECT COUNT(*) FROM VendaServico")
-			total_vendas = cursor.fetchone()[0]
-			print(f"Total de vendas de serviços realizadas: {total_vendas}")
+			cursor.execute("""
+				  SELECT cb.nome, COUNT(*) AS total_vendas
+				  FROM VendaServico v
+				  JOIN Cabeleireiro cb ON v.cabeleireiro_id = cb.id
+				  WHERE MONTH(v.data) = MONTH(CURDATE()) AND YEAR(v.data) = YEAR(CURDATE())
+				  GROUP BY cb.nome
+				  """)
+			for linha in cursor.fetchall():
+				print(f"Cabeleireiro: {linha[0]} | Vendas no mês: {linha[1]}")
 		except mysql.connector.Error as err:
 			print(f"Erro: {err}")
 
@@ -198,8 +227,11 @@ def menu(conexao):
 			cliente_idade = int(input("Idade: "))
 			cliente_tel = input("Telefone: ")
 			cliente_email = input("Email: ")
+			is_flamengo = input("Torcedor do Flamengo? (s/n): ").lower() == 's'
+			is_one_piece = input("Assiste One Piece? (s/n): ").lower() == 's'
+			cidade = input("Cidade: ")
 			
-			cliente = Cliente(cliente_nome, cliente_idade, cliente_tel, cliente_email)
+			cliente = Cliente(cliente_nome, cliente_idade, cliente_tel, cliente_email, is_flamengo, is_one_piece, cidade)
 			Gerencia.inserir(conexao, opcao, cliente)
 
 		
@@ -236,7 +268,21 @@ def menu(conexao):
 			cabeleireiro_id = int(input("ID do cabeleireiro: "))
 			servico_id = int(input("ID do serviço: "))
 			data = input("Data (YYYY-MM-DD): ")
-			forma_pagamento = input("Forma de pagamento (cartao, boleto, pix, berries): ")
+			print("Escolha a forma de pagamento:")
+			print("1 - Cartão de crédito")
+			print("2 - Cartão de débito")
+			print("3 - Pix")
+			print("4 - Boleto")
+			print("5 - Berries")
+			escolha = int(input("Digite o número da forma de pagamento: "))
+			formas = {
+				1: "cartao_credito",
+				2: "cartao_debito",
+                3: "pix",
+                4: "boleto",
+                5: "berries"
+            }
+			forma_pagamento = formas.get(escolha, "pix")
 			status_pagamento = input("Status do pagamento (confirmado, pendente, etc): ")
 			venda = VendaServico(cliente_id, cabeleireiro_id, servico_id, data, forma_pagamento, status_pagamento)
 			Gerencia.inserir(conexao, opcao, venda)
