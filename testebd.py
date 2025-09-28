@@ -31,6 +31,17 @@ class Agendamento:
 		self.data = data
 		self.hora = hora
 
+#Entidade VendaServico:
+class VendaServico:
+	def __init__(self, cliente_id, cabeleireiro_id, servico_id, data, forma_pagamento, status_pagamento):
+		self.cliente_id = cliente_id
+		self.cabeleireiro_id = cabeleireiro_id
+		self.servico_id = servico_id
+		self.data = data
+		self.forma_pagamento = forma_pagamento
+		self.status_pagamento = status_pagamento
+
+
 #Classe para gerenciar as relações
 class Gerencia:
 	def inserir(conexao, tabela, objeto):
@@ -55,6 +66,12 @@ class Gerencia:
 		elif tabela == 4:
 			comando = "INSERT INTO Agendamento (cliente_id, servico, data, hora) VALUES (%s, %s, %s, %s)"
 			values = (objeto.cliente, objeto.servico, objeto.data, objeto.hora)
+
+		# Inserir na Tabela VendaServico
+		
+		elif tabela == 5:
+			comando = "INSERT INTO VendaServico (cliente_id, cabeleireiro_id, servico_id, data, forma_pagamento, status_pagamento) VALUES (%s, %s, %s, %s, %s, %s)"
+			values = (objeto.cliente_id, objeto.cabeleireiro_id, objeto.servico_id, objeto.data, objeto.forma_pagamento, objeto.status_pagamento)
 		
 		try:
 			cursor.execute(comando, values)
@@ -161,11 +178,20 @@ class Gerencia:
 			print(f"Total de agendamentos feitos: {total_agendamentos}")
 		except mysql.connector.Error as err:
 			print(f"Erro: {err}")
+
+			print("\n--- Relatório de Vendas de Serviços ---")
+		try:
+			cursor.execute("SELECT COUNT(*) FROM VendaServico")
+			total_vendas = cursor.fetchone()[0]
+			print(f"Total de vendas de serviços realizadas: {total_vendas}")
+		except mysql.connector.Error as err:
+			print(f"Erro: {err}")
+
 		
 def menu(conexao):
 	continua = True
 	while(continua):
-		opcao = int(input("  Digite o que deseja fazer:\n\t• 1 - Para criar um novo Cliente\n\t• 2 - Para criar um novo Cabeleireiro\n\t• 3 - Para criar um novo Serviço\n\t• 4 - Para criar um novo Agendamento\n\t• 5 - Para atualizar alguma informação\n\t• 6 - Para apagar alguma informação\n\t• 7 - Para exibir algum dado\n\t• 8 - Para gerar relatório\n\t• 0 - Sair\n\t"))
+		opcao = int(input("  Digite o que deseja fazer:\n\t• 1 - Para criar um novo Cliente\n\t• 2 - Para criar um novo Cabeleireiro\n\t• 3 - Para criar um novo Serviço\n\t• 4 - Para criar um novo Agendamento\n\t• 5 - Para registrar uma Venda de Servico\n\t• 6 - Para atualizar alguma informação\n\t• 7 - Para apagar alguma informação\n\t• 8 - Para exibir algum dado\n\t• 9 - Para gerar relatório\n\t• 0 - Sair\n\t"))
 		
 		if(opcao == 1):
 			cliente_nome = input("Digite o nome do cliente: ")
@@ -204,9 +230,18 @@ def menu(conexao):
 			
 			agenda = Agendamento(ag_cliente_id, ag_serv, ag_data, ag_horario)
 			Gerencia.inserir(conexao, opcao, agenda)
-			
-		
+
 		elif(opcao == 5):
+			cliente_id = int(input("ID do cliente: "))
+			cabeleireiro_id = int(input("ID do cabeleireiro: "))
+			servico_id = int(input("ID do serviço: "))
+			data = input("Data (YYYY-MM-DD): ")
+			forma_pagamento = input("Forma de pagamento (cartao, boleto, pix, berries): ")
+			status_pagamento = input("Status do pagamento (confirmado, pendente, etc): ")
+			venda = VendaServico(cliente_id, cabeleireiro_id, servico_id, data, forma_pagamento, status_pagamento)
+			Gerencia.inserir(conexao, opcao, venda)
+
+		elif(opcao == 6):
 			tabela = input("Digite qual tabela deseja atualizar: ")
 			coluna = input("Digite a coluna a ser atualizada: ")
 			novo_valor = input("Digite o novo valor: ")
@@ -215,14 +250,14 @@ def menu(conexao):
 			Gerencia.alterar(conexao, tabela, coluna, novo_valor, condicao)
 		
 		
-		elif(opcao == 6):
+		elif(opcao == 7):
 			tabela = input("Digite a tabela o qual deseja apagar: ")
 			condicao = input("Digite a condição (use aspas, ex: nome = 'Fulano'): ")
 			
 			Gerencia.remover(conexao, tabela, condicao)
 			
 		
-		elif(opcao == 7):
+		elif(opcao == 8):
 			x = input("Você deseja Pesquisar por nome? (s/n): ")
 			x = x.lower()
 			
@@ -246,7 +281,7 @@ def menu(conexao):
 					tabela = input("Digite a tabela que deseja exibir: ")
 					Gerencia.exibir_um(conexao, tabela)
 		
-		elif(opcao == 8):
+		elif(opcao == 9):
 			gerencia = Gerencia()
 			gerencia.relatorio(conexao)
 		
