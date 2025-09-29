@@ -1,4 +1,5 @@
 import mysql.connector
+from decimal import Decimal
 
 #Entidade cliente
 class Cliente:
@@ -28,26 +29,29 @@ class Servico:
 
 #Entidade agendamento
 class Agendamento:
-    def __init__(self, cliente, servico, data, hora):
-        self.cliente = cliente
-        self.servico = servico
+    def __init__(self, cliente_id, servico_id, data, hora):
+        self.cliente_id = cliente_id
+        self.servico_id = servico_id
         self.data = data
         self.hora = hora
 
-#Entidade VendaServico:
+#Entidade VendaServico
 class VendaServico:
-    def __init__(self, cliente_id, cabeleireiro_id, servico_id, data, forma_pagamento, status_pagamento, valor_final):
-        self.cliente_id = cliente_id
+    def __init__(self, agendamento_id, cabeleireiro_id, forma_pagamento, status_pagamento, valor_final):
+        self.agendamento_id = agendamento_id
         self.cabeleireiro_id = cabeleireiro_id
-        self.servico_id = servico_id
-        self.data = data
         self.forma_pagamento = forma_pagamento
         self.status_pagamento = status_pagamento
         self.valor_final = valor_final
 
 # Função para calcular desconto automático
-def calcular_desconto(conexao, cliente_id, servico_id):
+def calcular_desconto(conexao, agendamento_id):
     cursor = conexao.cursor()
+    cursor.execute("SELECT cliente_id, servico FROM Agendamento WHERE id = %s", (agendamento_id,))
+    agendamento = cursor.fetchone()
+    if not agendamento:
+        return 0
+    cliente_id, servico_id = agendamento
     cursor.execute("SELECT is_flamengo, is_one_piece, cidade FROM Cliente WHERE id = %s", (cliente_id,))
     cliente = cursor.fetchone()
     cursor.execute("SELECT preco FROM Servico WHERE id_serv = %s", (servico_id,))
@@ -60,33 +64,29 @@ def calcular_desconto(conexao, cliente_id, servico_id):
             desconto += 0.10
         if cliente[2].lower() == "sousa":
             desconto += 0.10
-    preco_final = preco_servico * (1 - desconto)
+    desconto_decimal = Decimal(str(desconto))  # Convertendo para Decimal
+    preco_final = preco_servico * (Decimal('1.0') - desconto_decimal)
     return preco_final
 
 #Classe para gerenciar as relações
 class Gerencia:
     def inserir(conexao, tabela, objeto):
         cursor = conexao.cursor()
-        #Inserir na Tabela Cliente
         if tabela == 1:
             comando = "INSERT INTO Cliente (nome, idade, telefone, email, is_flamengo, is_one_piece, cidade) VALUES (%s, %s, %s, %s, %s, %s, %s)"
             values = (objeto.nome, objeto.idade, objeto.telefone, objeto.email, objeto.is_flamengo, objeto.is_one_piece, objeto.cidade)
-        #Inserir na Tabela Cabeleireiro
         elif tabela == 2:
             comando = "INSERT INTO Cabeleireiro (nome, idade, telefone, email, especializacao) VALUES (%s, %s, %s, %s, %s)"
             values = (objeto.nome, objeto.idade, objeto.telefone, objeto.email, objeto.especializacao)
-        #Inserir na Tabela Serviço
         elif tabela == 3:
             comando = "INSERT INTO Servico (nome_serv, preco) VALUES (%s, %s)"
             values = (objeto.nome_serv, objeto.preco)
-        #Inserir na Tabela Agendamento
         elif tabela == 4:
             comando = "INSERT INTO Agendamento (cliente_id, servico, data, hora) VALUES (%s, %s, %s, %s)"
-            values = (objeto.cliente, objeto.servico, objeto.data, objeto.hora)
-        # Inserir na Tabela VendaServico
+            values = (objeto.cliente_id, objeto.servico_id, objeto.data, objeto.hora)
         elif tabela == 5:
-            comando = "INSERT INTO VendaServico (cliente_id, cabeleireiro_id, servico_id, data, forma_pagamento, status_pagamento, valor_final) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-            values = (objeto.cliente_id, objeto.cabeleireiro_id, objeto.servico_id, objeto.data, objeto.forma_pagamento, objeto.status_pagamento, objeto.valor_final)
+            comando = "INSERT INTO VendaServico (agendamento_id, cabeleireiro_id, forma_pagamento, status_pagamento, valor_final) VALUES (%s, %s, %s, %s, %s)"
+            values = (objeto.agendamento_id, objeto.cabeleireiro_id, objeto.forma_pagamento, objeto.status_pagamento, objeto.valor_final)
         try:
             cursor.execute(comando, values)
             conexao.commit()
@@ -185,42 +185,78 @@ class Gerencia:
         print("\n--- Relatório de Vendas de Serviços ---")
         try:
             cursor.execute("""
-                SELECT v.id, c.nome AS cliente, cb.nome AS cabeleireiro, s.nome_serv AS servico, v.data, v.forma_pagamento, v.status_pagamento, v.valor_final
+                SELECT v.id, a.cliente_id, c.nome AS cliente, cb.nome AS cabeleireiro, s.nome_serv AS servico, a.data, v.forma_pagamento, v.status_pagamento, v.valor_final
                 FROM VendaServico v
-                JOIN Cliente c ON v.cliente_id = c.id
+                JOIN Agendamento a ON v.agendamento_id = a.id
+                JOIN Cliente c ON a.cliente_id = c.id
                 JOIN Cabeleireiro cb ON v.cabeleireiro_id = cb.id
-                JOIN Servico s ON v.servico_id = s.id_serv
-                ORDER BY v.data DESC
+                JOIN Servico s ON a.servico = s.id_serv
+                ORDER BY v.id DESC
             """)
             vendas = cursor.fetchall()
-            total_arrecadado = sum([venda[7] for venda in vendas])
+            total_arrecadado = sum([venda[8] for venda in vendas])
             print(f"Total de vendas de serviços realizadas: {len(vendas)}")
             print(f"Valor arrecadado com vendas: R$ {total_arrecadado:.2f}")
-            print("ID | Cliente | Cabeleireiro | Serviço | Data | Pagamento | Status | Valor Final")
-            print("-"*90)
+            print("ID | ClienteID | Cliente | Cabeleireiro | Serviço | Data | Pagamento | Status | Valor Final")
+            print("-"*100)
             for venda in vendas:
-                print(f"{venda[0]} | {venda[1]} | {venda[2]} | {venda[3]} | {venda[4]} | {venda[5]} | {venda[6]} | R$ {venda[7]:.2f}")
+                print(f"{venda[0]} | {venda[1]} | {venda[2]} | {venda[3]} | {venda[4]} | {venda[5]} | {venda[6]} | {venda[7]} | R$ {venda[8]:.2f}")
         except mysql.connector.Error as err:
             print(f"Erro: {err}")
 
         print("\n--- Vendas por cabeleireiro (mês atual) ---")
         try:
             cursor.execute("""
-                SELECT cb.nome, COUNT(*) AS total_vendas, SUM(v.valor_final) AS total_arrecadado
-                FROM VendaServico v
-                JOIN Cabeleireiro cb ON v.cabeleireiro_id = cb.id
-                WHERE MONTH(v.data) = MONTH(CURDATE()) AND YEAR(v.data) = YEAR(CURDATE())
-                GROUP BY cb.nome
-            """)
-            for linha in cursor.fetchall():
-                print(f"Cabeleireiro: {linha[0]} | Vendas no mês: {linha[1]} | Arrecadado: R$ {linha[2]:.2f}")
-        except mysql.connector.Error as err:
-            print(f"Erro: {err}")
+                           SELECT c.id, c.nome, COUNT(vs.id) AS total_vendas, SUM(vs.valor_final) AS total_arrecadado
+                           FROM Cabeleireiro c
+                           JOIN VendaServico vs ON vs.cabeleireiro_id = c.id
+                           JOIN Agendamento a ON a.id = vs.agendamento_id
+                           WHERE MONTH(a.data) = MONTH(CURDATE()) AND YEAR(a.data) = YEAR(CURDATE())
+                           GROUP BY c.id, c.nome
+                           ORDER BY total_arrecadado DESC;
+                           """)
+            resultados = cursor.fetchall()
+            if resultados:
+                for (id_cab, nome, total_vendas, total_arrecadado) in resultados:
+                    print(f"Cabeleireiro: {nome} | Vendas no mês: {total_vendas} | Arrecadado: R$ {total_arrecadado:.2f}")
+            else:
+                print("Nenhuma venda realizada no mês atual.")
+        except Exception as e:
+            print(f"Erro ao gerar relatório: {e}")
+
+def consultar_servicos(conexao):
+    print("\n--- Consulta de Serviços ---")
+    print("1 - Consultar por nome")
+    print("2 - Consultar por faixa de preço")
+    escolha = int(input("Escolha a opção: "))
+    cursor = conexao.cursor()
+    if escolha == 1:
+        nome = input("Digite o nome do serviço: ")
+        # Usando View
+        cursor.execute("SELECT * FROM ServicosView WHERE nome_serv LIKE %s", (f"%{nome}%",))
+        resultados = cursor.fetchall()
+        print("id_serv | nome_serv | preco")
+        print("-"*30)
+        for linha in resultados:
+            print(f"{linha[0]} | {linha[1]} | R$ {linha[2]:.2f}")
+    elif escolha == 2:
+        min_preco = float(input("Preço mínimo: "))
+        max_preco = float(input("Preço máximo: "))
+        # Usando Stored Procedure
+        cursor.callproc('ConsultaFaixaPreco', (min_preco, max_preco))
+        for result in cursor.stored_results():
+            resultados = result.fetchall()
+            print("id_serv | nome_serv | preco")
+            print("-"*30)
+            for linha in resultados:
+                print(f"{linha[0]} | {linha[1]} | R$ {linha[2]:.2f}")
+    else:
+        print("Opção inválida.")
 
 def menu(conexao):
     continua = True
     while(continua):
-        opcao = int(input("  Digite o que deseja fazer:\n\t• 1 - Para criar um novo Cliente\n\t• 2 - Para criar um novo Cabeleireiro\n\t• 3 - Para criar um novo Serviço\n\t• 4 - Para criar um novo Agendamento\n\t• 5 - Para registrar uma Venda de Servico\n\t• 6 - Para atualizar alguma informação\n\t• 7 - Para apagar alguma informação\n\t• 8 - Para exibir algum dado\n\t• 9 - Para gerar relatório\n\t• 0 - Sair\n\t"))
+        opcao = int(input("  Digite o que deseja fazer:\n\t• 1 - Para criar um novo Cliente\n\t• 2 - Para criar um novo Cabeleireiro\n\t• 3 - Para criar um novo Serviço\n\t• 4 - Para criar um novo Agendamento\n\t• 5 - Para registrar uma Venda de Servico\n\t• 6 - Para atualizar alguma informação\n\t• 7 - Para apagar alguma informação\n\t• 8 - Para exibir algum dado\n\t• 9 - Para gerar relatório\n\t• 10 - Consultar serviços\n\t• 0 - Sair\n\t"))
         if(opcao == 1):
             cliente_nome = input("Digite o nome do cliente: ")
             cliente_idade = int(input("Idade: "))
@@ -252,10 +288,8 @@ def menu(conexao):
             agenda = Agendamento(ag_cliente_id, ag_serv, ag_data, ag_horario)
             Gerencia.inserir(conexao, opcao, agenda)
         elif(opcao == 5):
-            cliente_id = int(input("ID do cliente: "))
+            agendamento_id = int(input("ID do agendamento relacionado: "))
             cabeleireiro_id = int(input("ID do cabeleireiro: "))
-            servico_id = int(input("ID do serviço: "))
-            data = input("Data (YYYY-MM-DD): ")
             print("Escolha a forma de pagamento:")
             print("1 - Cartão de crédito")
             print("2 - Cartão de débito")
@@ -272,8 +306,8 @@ def menu(conexao):
             }
             forma_pagamento = formas.get(escolha, "pix")
             status_pagamento = input("Status do pagamento (confirmado, pendente, etc): ")
-            valor_final = calcular_desconto(conexao, cliente_id, servico_id)
-            venda = VendaServico(cliente_id, cabeleireiro_id, servico_id, data, forma_pagamento, status_pagamento, valor_final)
+            valor_final = calcular_desconto(conexao, agendamento_id)
+            venda = VendaServico(agendamento_id, cabeleireiro_id, forma_pagamento, status_pagamento, valor_final)
             Gerencia.inserir(conexao, opcao, venda)
             print(f"Venda registrada com valor final: R$ {valor_final:.2f}")
         elif(opcao == 6):
@@ -303,6 +337,8 @@ def menu(conexao):
         elif(opcao == 9):
             gerencia = Gerencia()
             gerencia.relatorio(conexao)
+        elif(opcao == 10):
+            consultar_servicos(conexao)
         else:
             continua = False
 
