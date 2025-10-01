@@ -232,7 +232,7 @@ def consultar_servicos(conexao):
     cursor = conexao.cursor()
     if escolha == 1:
         nome = input("Digite o nome do serviço: ")
-        # Usando View
+        # View
         cursor.execute("SELECT * FROM ServicosView WHERE nome_serv LIKE %s", (f"%{nome}%",))
         resultados = cursor.fetchall()
         print("id_serv | nome_serv | preco")
@@ -242,7 +242,7 @@ def consultar_servicos(conexao):
     elif escolha == 2:
         min_preco = float(input("Preço mínimo: "))
         max_preco = float(input("Preço máximo: "))
-        # Usando Stored Procedure
+        # Stored Procedure
         cursor.callproc('ConsultaFaixaPreco', (min_preco, max_preco))
         for result in cursor.stored_results():
             resultados = result.fetchall()
